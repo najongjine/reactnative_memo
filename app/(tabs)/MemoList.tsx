@@ -6,6 +6,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Memo } from "../types/types"; // Memo 타입 정의를 가져옵니다.
 import { getMemos } from "../utils/db"; // getMemos 함수를 가져옵니다.
 
@@ -67,12 +68,14 @@ export default function MemoList() {
 
   // FlatList는 큰 목록을 효율적으로 렌더링하는 데 사용됩니다.
   return (
-    <FlatList
-      data={memos}
-      renderItem={renderItem}
-      keyExtractor={(item) => item?.id?.toString() ?? "0"}
-      contentContainerStyle={styles.listContainer}
-    />
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#F8F8F8" }}>
+      <FlatList
+        data={memos}
+        renderItem={renderItem}
+        keyExtractor={(item) => item?.id?.toString() ?? "0"}
+        contentContainerStyle={styles.listContainer}
+      />
+    </SafeAreaView>
   );
 }
 

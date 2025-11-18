@@ -5,9 +5,27 @@ import { HapticTab } from "@/components/haptic-tab";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useEffect, useState } from "react";
+import { initDB } from "../utils/db";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const [dbInitialized, setDbInitialized] = useState(false);
+
+  useEffect(() => {
+    // 앱이 시작될 때 DB 초기화를 시도합니다.
+    const initializeDatabase = async () => {
+      try {
+        await initDB();
+        setDbInitialized(true); // 초기화 성공
+      } catch (error) {
+        console.error("Failed to initialize database:", error);
+        // 에러 처리: 사용자에게 메시지를 보여주거나 앱을 종료할 수 있습니다.
+      }
+    };
+
+    initializeDatabase();
+  }, []);
 
   return (
     <Tabs

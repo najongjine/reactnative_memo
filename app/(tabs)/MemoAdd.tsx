@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { addMemo } from "../utils/db"; // db.ts 파일에서 addMemo 함수를 가져옵니다.
 
 export default function MemoAdd() {
@@ -47,32 +48,34 @@ export default function MemoAdd() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.label}>제목:</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="메모의 제목을 입력하세요."
-        value={title}
-        onChangeText={setTitle}
-        // 제목은 한 줄만 입력
-        numberOfLines={1}
-      />
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#F8F8F8" }}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.label}>제목:</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="메모의 제목을 입력하세요."
+          value={title}
+          onChangeText={setTitle}
+          // 제목은 한 줄만 입력
+          numberOfLines={1}
+        />
 
-      <Text style={styles.label}>내용:</Text>
-      <TextInput
-        style={[styles.input, styles.contentInput]}
-        placeholder="메모의 내용을 입력하세요."
-        value={content}
-        onChangeText={setContent}
-        // 내용은 여러 줄 입력 가능하도록 설정
-        multiline={true}
-        textAlignVertical="top" // 안드로이드에서 텍스트가 상단부터 시작하도록 설정
-      />
+        <Text style={styles.label}>내용:</Text>
+        <TextInput
+          style={[styles.input, styles.contentInput]}
+          placeholder="메모의 내용을 입력하세요."
+          value={content}
+          onChangeText={setContent}
+          // 내용은 여러 줄 입력 가능하도록 설정
+          multiline={true}
+          textAlignVertical="top" // 안드로이드에서 텍스트가 상단부터 시작하도록 설정
+        />
 
-      <View style={styles.buttonContainer}>
-        <Button title="저장하기" onPress={handleSave} color="#007AFF" />
-      </View>
-    </ScrollView>
+        <View style={styles.buttonContainer}>
+          <Button title="저장하기" onPress={handleSave} color="#007AFF" />
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
