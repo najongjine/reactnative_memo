@@ -96,3 +96,50 @@ export const getMemos = async (): Promise<Memo[]> => {
     throw error;
   }
 };
+
+/**
+ * 4. 메모 단일 항목 가져오기 (Read Single)
+ */
+export const getMemoById = async (id: number): Promise<Memo | null> => {
+  const db = await getDb();
+  try {
+    // db.getFirstAsync는 SELECT 구문에 적합하며, 첫 번째 결과 행을 반환합니다.
+    const memo: Memo | null = await db.getFirstAsync<Memo>(
+      `SELECT * FROM memos WHERE id = ?;`,
+      [id]
+    );
+    return memo;
+  } catch (error) {
+    console.error("Error fetching memo by ID:", error);
+    throw error;
+  }
+};
+
+/**
+ * 5. 메모 수정 (Update)
+ */
+export const updateMemo = async (
+  id: number,
+  title: string,
+  content: string
+): Promise<number> => {
+  const db = await getDb();
+
+  try {
+    // db.runAsync는 UPDATE 구문에 적합하며, 변경된 행의 수를 반환합니다.
+    const result = await db.runAsync(
+      `UPDATE memos SET 
+      title = ?
+      , content = ? 
+      WHERE id = ?;`,
+      title,
+      content,
+      id
+    );
+    // changes는 영향을 받은(수정된) 행의 수입니다.
+    return result.changes;
+  } catch (error) {
+    console.error("Error updating memo:", error);
+    throw error;
+  }
+};

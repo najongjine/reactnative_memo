@@ -1,5 +1,5 @@
-import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router"; // useLocalSearchParams 추가
+import { useEffect, useState } from "react"; // useEffect 추가
 import {
   Alert,
   Button,
@@ -10,53 +10,88 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { addMemo } from "../utils/db"; // db.ts 파일에서 addMemo 함수를 가져옵니다.
+// getMemoById, updateMemo 함수를 db.ts에서 가져옵니다.
+import { addMemo, getMemoById, updateMemo } from "../utils/db";
 
 export default function MemoAdd() {
-  const [title, setTitle] = useState(""); // 제목 입력을 위한 상태
-  const [content, setContent] = useState(""); // 내용 입력을 위한 상태
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
   const router = useRouter();
 
+  // 쿼리 파라미터(id)를 가져옵니다.
+  // id가 문자열로 넘어오므로 Number()로 변환합니다.
+  const { id: memoIdParam } = useLocalSearchParams();
+  const memoId = Number(memoIdParam) ?? 0; // id가 없거나 유효하지 않으면 0으로 처리
+
   /**
-   * 메모 저장 로직
+   * 폼 초기 데이터 로딩 (수정 모드일 때)
+   */
+  useEffect(() => {
+    if (memoId) {
+      const loadMemo = async () => {
+        try {
+          const memo = await getMemoById(memoId);
+          if (memo) {
+            setTitle(memo?.title ?? "");
+            setContent(memo?.content ?? "");
+          } else {
+            // ID가 있는데 메모를 찾을 수 없을 때
+            Alert.alert("오류", "해당 메모를 찾을 수 없습니다.");
+            router.replace("/MemoList");
+          }
+        } catch (error: any) {
+          console.error("Failed to load memo for editing:", error);
+          Alert.alert("오류", "메모를 불러오는 중 문제가 발생했습니다.");
+        }
+      };
+      loadMemo();
+    }
+  }, [memoId]); // ID가 변경될 때마다 실행
+
+  /**
+   * 메모 저장/수정 통합 로직
    */
   const handleSave = async () => {
-    // 제목과 내용 중 하나라도 비어 있으면 저장하지 않습니다.
     if (!title.trim() || !content.trim()) {
       Alert.alert("경고", "제목과 내용을 모두 입력해주세요.");
       return;
     }
 
     try {
-      const insertedId = await addMemo(title, content);
-      console.log("Memo added with ID:", insertedId);
+      if (memoId) {
+        // --- 수정 모드 ---
+        await updateMemo(memoId, title, content);
+        Alert.alert("수정 완료", "메모가 성공적으로 수정되었습니다.");
+      } else {
+        // --- 작성 모드 ---
+        await addMemo(title, content);
+        Alert.alert("저장 완료", "새로운 메모가 성공적으로 저장되었습니다.");
+      }
 
-      // 저장 성공 메시지 표시
-      Alert.alert("저장 완료", "새로운 메모가 성공적으로 저장되었습니다.");
-
-      // 입력 필드 초기화
-      setTitle("");
-      setContent("");
-
-      // 실제 앱에서는 여기서 메모 목록 화면으로 이동하거나 목록을 새로고침합니다.
-      // (지금은 단순하게 입력 필드만 초기화).
+      // 저장 또는 수정 후 목록 화면으로 이동
       router.replace("/MemoList");
-    } catch (error) {
-      console.error("Failed to add memo:", error);
-      Alert.alert("오류", "메모 저장 중 문제가 발생했습니다.");
+    } catch (error: any) {
+      console.error(`Failed to ${memoId ? "update" : "add"} memo:`, error);
+      Alert.alert(
+        "오류",
+        `${memoId ? "수정" : "저장"} 중 문제가 발생했습니다.`
+      );
     }
   };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F8F8F8" }}>
       <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.label}>
+          {memoId ? "메모 수정" : "새 메모 작성"}
+        </Text>
+
         <Text style={styles.label}>제목:</Text>
         <TextInput
           style={styles.input}
           placeholder="메모의 제목을 입력하세요."
           value={title}
           onChangeText={setTitle}
-          // 제목은 한 줄만 입력
           numberOfLines={1}
         />
 
@@ -66,13 +101,16 @@ export default function MemoAdd() {
           placeholder="메모의 내용을 입력하세요."
           value={content}
           onChangeText={setContent}
-          // 내용은 여러 줄 입력 가능하도록 설정
           multiline={true}
-          textAlignVertical="top" // 안드로이드에서 텍스트가 상단부터 시작하도록 설정
+          textAlignVertical="top"
         />
 
         <View style={styles.buttonContainer}>
-          <Button title="저장하기" onPress={handleSave} color="#007AFF" />
+          <Button
+            title={memoId ? "수정하기" : "저장하기"}
+            onPress={handleSave}
+            color="#007AFF"
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -81,9 +119,8 @@ export default function MemoAdd() {
 
 const styles = StyleSheet.create({
   container: {
-    // ScrollView의 내용 영역 전체에 padding을 줍니다.
     padding: 20,
-    backgroundColor: "#F8F8F8", // 배경색 추가
+    backgroundColor: "#F8F8F8",
   },
   label: {
     fontSize: 16,
@@ -92,21 +129,19 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     color: "#333",
   },
+  // ... (나머지 스타일은 동일)
   input: {
     borderWidth: 1,
     borderColor: "#CCC",
     padding: 10,
     borderRadius: 8,
-    backgroundColor: "#FFF", // 입력 필드 배경색
+    backgroundColor: "#FFF",
     fontSize: 16,
   },
   contentInput: {
-    height: 150, // 내용 입력 필드는 높이를 더 줍니다.
-    // iOS의 경우 multiline={true}이면 기본적으로 textAlignVertical이 top으로 설정됩니다.
+    height: 150,
   },
   buttonContainer: {
     marginTop: 30,
-    // 버튼을 감싸는 View에 너비를 지정하여 버튼의 크기를 조절할 수 있습니다.
-    // 여기서는 전체 너비를 사용합니다.
   },
 });
